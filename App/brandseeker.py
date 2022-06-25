@@ -6,8 +6,6 @@ import torch
 from PIL import Image
 import cv2
 
-# from models.yolov5.models.common import DetectMultiBackend
-
 from utils.dataloaders import IMG_FORMATS, VID_FORMATS, LoadImages, LoadStreams
 from utils.general import (LOGGER, check_file, check_img_size, check_imshow, check_requirements, colorstr, cv2, increment_path, non_max_suppression, print_args, scale_coords, strip_optimizer, xyxy2xywh)
 from utils.plots import Annotator, colors, save_one_box
@@ -89,29 +87,10 @@ def predict(args):
 
             frame = getattr(dataset, 'frame', 0)
 
-            print(pred)
-            
-            # for i, det in enumerate(pred):  # per image
-            #     seen += 1
-            #     p, im0, frame = path, im0s.copy(), getattr(dataset, 'frame', 0)
+            has_prediction = len(pred[0])
+            if has_prediction:
+                print(s) # save to the file
 
-            #     p = Path(p)  # to Path
-            #     # save_path = str(save_dir / p.name)  # im.jpg
-            #     # txt_path = str(save_dir / 'labels' / p.stem) + ('' if dataset.mode == 'image' else f'_{frame}')  # im.txt
-
-            #     s += '%gx%g ' % im.shape[2:]  # print string
-            #     gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
-            #     # imc = im0.copy() if save_crop else im0  # for save_crop
-            #     # imc = im0
-            #     # annotator = Annotator(im0, line_width=line_thickness, example=str(names))
-
-
-
-
-
-        # results = model(imgs, size=640)
-        # results.print()
-    
 
 
 if __name__ == "__main__":
