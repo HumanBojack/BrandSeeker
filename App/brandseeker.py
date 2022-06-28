@@ -92,22 +92,22 @@ def predict(args):
 
             has_prediction = len(pred)         
             if has_prediction:
-                print('#'*50)
-                print(frame, s) # save to the file
                 pred = pred[0].tolist()
-                print(pred)
-                {
-                    "brand": {"bbox": [], "confidence": []}
-                }
                 label = names[int(pred[5])]
-                brand_count[label] = brand_count.get(label, {"bbox": [], "confidence": [], "frames": []})
+
+                # Retrieve or create a dictionnary key for the label and add the bbox, confidence and frame of the prediction
+                brand_count[label] = brand_count.get(label, {"bbox": [], "confidence": [], "frame": []})
                 brand_count[label]["bbox"].append(pred[0:4])
                 brand_count[label]["confidence"].append(pred[4])
-                brand_count[label]["frames"].append(frame)
+                brand_count[label]["frame"].append(frame)
 
-        print('#'*50)
-        from pprint import pprint
-        pprint(brand_count)
+        # This is a temporary output for the devs to see how the output looks like
+        # It should be useful when creating the method filtering the outputs
+        if brand_count:
+            from pprint import pprint, pformat
+            pprint(brand_count)
+            with open("output.txt", "w") as f:
+                f.write(pformat(brand_count))
 
 
 
