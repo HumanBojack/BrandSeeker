@@ -61,7 +61,7 @@ def predict(args):
         stride, names, pt = model.stride, model.names, model.pt
         imgsz = check_img_size((640, 640), s=stride)  # check image size might want to remove
 
-        dataset = LoadImages(source, img_size=imgsz, stride=stride, auto=pt)
+        dataset = LoadImages(source, img_size=imgsz, stride=stride, auto=pt) # we should check that there is only one video in the dataset for now
         bs = 1  # batch_size
 
         # Initialize the count of brands in the video
@@ -99,15 +99,15 @@ def predict(args):
                 {
                     "brand": {"bbox": [], "confidence": []}
                 }
-                label = int(pred[5])
-                brand_count[label] = brand_count.get(label, {"bbox": [], "confidence": []})
+                label = names[int(pred[5])]
+                brand_count[label] = brand_count.get(label, {"bbox": [], "confidence": [], "frames": []})
                 brand_count[label]["bbox"].append(pred[0:4])
                 brand_count[label]["confidence"].append(pred[4])
-                # print(pred[0:4])
-                # print(pred[0])
-                # print(pred[5])
+                brand_count[label]["frames"].append(frame)
 
-        print(brand_count)
+        print('#'*50)
+        from pprint import pprint
+        pprint(brand_count)
 
 
 
