@@ -64,6 +64,9 @@ def predict(args):
         dataset = LoadImages(source, img_size=imgsz, stride=stride, auto=pt)
         bs = 1  # batch_size
 
+        # Initialize the count of brands in the video
+        brand_count = {}
+
         dt, seen = [0.0, 0.0, 0.0], 0
         for path, im, im0s, vid_cap, s in dataset:
             t1 = time_sync()
@@ -82,14 +85,29 @@ def predict(args):
             dt[1] += t3 - t2
 
             # NMS
-            pred = non_max_suppression(pred, conf_thres=0.35, max_det=5) # might want to discuss the max nb of detection, iou...
+            pred = non_max_suppression(pred, conf_thres=0.35, max_det=5)[0] # might want to discuss the max nb of detection, iou...
             dt[2] += time_sync() - t3
 
             frame = getattr(dataset, 'frame', 0)
 
-            has_prediction = len(pred[0])
+            has_prediction = len(pred)         
             if has_prediction:
-                print(s) # save to the file
+                print('#'*50)
+                print(frame, s) # save to the file
+                pred = pred[0].tolist()
+                print(pred)
+                {
+                    "brand": {"bbox": [], "confidence": []}
+                }
+                label = int(pred[5])
+                brand_count[label] = brand_count.get(label, {"bbox": [], "confidence": []})
+                brand_count[label]["bbox"].append(pred[0:4])
+                brand_count[label]["confidence"].append(pred[4])
+                # print(pred[0:4])
+                # print(pred[0])
+                # print(pred[5])
+
+        print(brand_count)
 
 
 
