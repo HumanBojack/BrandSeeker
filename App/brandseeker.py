@@ -41,75 +41,70 @@ from pathlib import Path
 # dnn=False,  # use OpenCV DNN for ONNX inference
 
 
-def predict(model, url, framerate):
+def predict(url, framerate):
+    source = "./images" # needs to be changed later
 
-    if model == 'yolo':
+    is_file = Path(source).suffix[1:] in (IMG_FORMATS + VID_FORMATS)
+    is_url = source.lower().startswith(('rtsp://', 'rtmp://', 'http://', 'https://'))
+    if is_url and is_file:
+        source = check_file(source)
 
-        source = "./images" # needs to be changed later
+    save_dir = "./predictions"
 
-        is_file = Path(source).suffix[1:] in (IMG_FORMATS + VID_FORMATS)
-        is_url = source.lower().startswith(('rtsp://', 'rtmp://', 'http://', 'https://'))
-        if is_url and is_file:
-            source = check_file(source)
+    device = select_device('')
+    model = torch.hub.load('ultralytics/yolov5', 'custom', path='weights/best.pt')
 
-        save_dir = "./predictions"
+    stride, names, pt = model.stride, model.names, model.pt
+    imgsz = check_img_size((640, 640), s=stride)  # check image size might want to remove
 
-        device = select_device('')
-        model = torch.hub.load('ultralytics/yolov5', 'custom', path='weights/best.pt')
+    dataset = LoadImages(source, img_size=imgsz, stride=stride, auto=pt)
+    bs = 1  # batch_size
 
-        stride, names, pt = model.stride, model.names, model.pt
-        imgsz = check_img_size((640, 640), s=stride)  # check image size might want to remove
+    pred_timing_start = time_sync()
 
-        dataset = LoadImages(source, img_size=imgsz, stride=stride, auto=pt)
-        bs = 1  # batch_size
+    dt, seen = [0.0, 0.0, 0.0], 0
+    for path, im, im0s, vid_cap, s in dataset:
+        # skip the frame if it isn't in the specified framerate
+        frame = getattr(dataset, 'frame', 0)
+        if frame == 1:
+            initial_framerate = vid_cap.get(cv2.CAP_PROP_FPS)
+            real_framerate = initial_framerate / round(initial_framerate / framerate)
+            
+        if frame % round(initial_framerate / framerate) != 0:
+            continue
 
-        pred_timing_start = time_sync()
+        t1 = time_sync()
+        im = torch.from_numpy(im).to(device)
+        im = im.float()
+        im /= 255  # 0 - 255 to 0.0 - 1.0
 
-        dt, seen = [0.0, 0.0, 0.0], 0
-        for path, im, im0s, vid_cap, s in dataset:
-            # skip the frame if it isn't in the specified framerate
-            frame = getattr(dataset, 'frame', 0)
-            if frame == 1:
-                initial_framerate = vid_cap.get(cv2.CAP_PROP_FPS)
-                real_framerate = initial_framerate / round(initial_framerate / framerate)
-                
-            if frame % round(initial_framerate / framerate) != 0:
-                continue
+        if len(im.shape) == 3:
+            im = im[None]  # expand for batch dim
+        t2 = time_sync()
+        dt[0] += t2 - t1
 
-            t1 = time_sync()
-            im = torch.from_numpy(im).to(device)
-            im = im.float()
-            im /= 255  # 0 - 255 to 0.0 - 1.0
+        # Inference
+        pred = model(im)
+        t3 = time_sync()
+        dt[1] += t3 - t2
 
-            if len(im.shape) == 3:
-                im = im[None]  # expand for batch dim
-            t2 = time_sync()
-            dt[0] += t2 - t1
-
-            # Inference
-            pred = model(im)
-            t3 = time_sync()
-            dt[1] += t3 - t2
-
-            # NMS
-            pred = non_max_suppression(pred, conf_thres=0.35, max_det=5)
-            dt[2] += time_sync() - t3
+        # NMS
+        pred = non_max_suppression(pred, conf_thres=0.35, max_det=5)
+        dt[2] += time_sync() - t3
 
 
-            has_prediction = len(pred[0])
-            if has_prediction:
-                print(s) # save to the file
+        has_prediction = len(pred[0])
+        if has_prediction:
+            print(s) # save to the file
 
-        pred_timing_stop = time_sync()
-        pred_timing = pred_timing_stop - pred_timing_start
-        print(f"Pred took {pred_timing}s ({pred_timing / real_framerate}s/frame)")
+    pred_timing_stop = time_sync()
+    pred_timing = pred_timing_stop - pred_timing_start
+    print(f"Pred took {pred_timing}s ({pred_timing / real_framerate}s/frame)")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument("-M", "--model", choices=["yolo"], default="yolo", help="choose the used model")
-    group.add_argument("-U", "--url", help="A youtube url of a video. The model will be yolo and the images and videos folder will be ignored")
+    parser.add_argument("-U", "--url", help="A youtube url of a video. The model will be yolo and the images and videos folder will be ignored")
     parser.add_argument("-F", "--framerate", type=int, default=15, help="The framerate of the analyzed video. A higher one will take longer to process.")
     # Add a data source argument
     # remove the model choice?
