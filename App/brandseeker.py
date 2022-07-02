@@ -41,10 +41,9 @@ from pathlib import Path
 # dnn=False,  # use OpenCV DNN for ONNX inference
 
 
-def predict(args):
-    print(args)
+def predict(model, url, framerate):
 
-    if args['model'] == 'yolo':
+    if model == 'yolo':
 
         source = "./images" # needs to be changed later
 
@@ -64,8 +63,16 @@ def predict(args):
         dataset = LoadImages(source, img_size=imgsz, stride=stride, auto=pt)
         bs = 1  # batch_size
 
+        pred_timing_start = time_sync()
         dt, seen = [0.0, 0.0, 0.0], 0
         for path, im, im0s, vid_cap, s in dataset:
+            # skip the frame if it isn't in the specified framerate
+            frame = getattr(dataset, 'frame', 0)
+            initial_framerate = vid_cap.get(cv2.CAP_PROP_FPS)
+
+            if frame % round(initial_framerate / framerate) != 0:
+                continue
+
             t1 = time_sync()
             im = torch.from_numpy(im).to(device)
             im = im.float()
@@ -82,15 +89,16 @@ def predict(args):
             dt[1] += t3 - t2
 
             # NMS
-            pred = non_max_suppression(pred, conf_thres=0.35, max_det=5) # might want to discuss the max nb of detection, iou...
+            pred = non_max_suppression(pred, conf_thres=0.35, max_det=5)
             dt[2] += time_sync() - t3
 
-            frame = getattr(dataset, 'frame', 0)
 
             has_prediction = len(pred[0])
             if has_prediction:
                 print(s) # save to the file
 
+        pred_timing_stop = time_sync()
+        print(f"Pred took {pred_timing_stop - pred_timing_start}s")
 
 
 if __name__ == "__main__":
@@ -98,9 +106,9 @@ if __name__ == "__main__":
     group = parser.add_mutually_exclusive_group()
     group.add_argument("-M", "--model", choices=["yolo"], default="yolo", help="choose the used model")
     group.add_argument("-U", "--url", help="A youtube url of a video. The model will be yolo and the images and videos folder will be ignored")
-    parser.add_argument("-F", "--framerate", type=int, default=15, help="the framerate of the video, only works on videos")
+    parser.add_argument("-F", "--framerate", type=int, default=15, help="The framerate of the analyzed video. A higher one will take longer to process.")
     # Add a data source argument
     # remove the model choice?
     args = parser.parse_args()
 
-    predict(vars(args))
+    predict(**vars(args))
