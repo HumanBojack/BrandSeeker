@@ -64,12 +64,15 @@ def predict(model, url, framerate):
         bs = 1  # batch_size
 
         pred_timing_start = time_sync()
+
         dt, seen = [0.0, 0.0, 0.0], 0
         for path, im, im0s, vid_cap, s in dataset:
             # skip the frame if it isn't in the specified framerate
             frame = getattr(dataset, 'frame', 0)
-            initial_framerate = vid_cap.get(cv2.CAP_PROP_FPS)
-
+            if frame == 1:
+                initial_framerate = vid_cap.get(cv2.CAP_PROP_FPS)
+                real_framerate = initial_framerate / round(initial_framerate / framerate)
+                
             if frame % round(initial_framerate / framerate) != 0:
                 continue
 
@@ -98,7 +101,8 @@ def predict(model, url, framerate):
                 print(s) # save to the file
 
         pred_timing_stop = time_sync()
-        print(f"Pred took {pred_timing_stop - pred_timing_start}s")
+        pred_timing = pred_timing_stop - pred_timing_start
+        print(f"Pred took {pred_timing}s ({pred_timing / real_framerate}s/frame)")
 
 
 if __name__ == "__main__":
