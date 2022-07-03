@@ -5,8 +5,8 @@ import argparse
 import torch
 from PIL import Image
 import cv2
-from fpdf import FPDF
-
+from pdf import PDF
+import json
 # from models.yolov5.models.common import DetectMultiBackend
 
 from utils.dataloaders import IMG_FORMATS, VID_FORMATS, LoadImages, LoadStreams
@@ -42,7 +42,6 @@ from pathlib import Path
 # hide_conf=False,  # hide confidences
 # half=False,  # use FP16 half-precision inference
 # dnn=False,  # use OpenCV DNN for ONNX inference
-
 
 def predict(args):
     print(args)
@@ -106,25 +105,29 @@ def predict(args):
             #     # imc = im0
             #     # annotator = Annotator(im0, line_width=line_thickness, example=str(names))
 
-
-
-
-
         # results = model(imgs, size=640)
         # results.print()
-    
-    # Pdf example
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font('Arial', 'B', 16)
-    pdf.cell(40, 10, 'Hello World!')
-    pdf.output('predictions/result.pdf', 'F')
+
+
+    with open('output_displate.txt', 'r') as f:
+        data = json.load(f)
+
+    # load instance
+    pdf = PDF()
+
+    # add images + stats
+    chapter = 0
+    for key, context  in data.items():
+        chapter += 1
+        pdf.print_chapter(chapter, key, str(context['']))
+
+    pdf.release()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     group = parser.add_mutually_exclusive_group()
     group.add_argument("-M", "--model", choices=["yolo"], default="yolo", help="choose the used model")
-    group.add_argument("-P", "--pdf", help="Export result to pdf")
+    group.add_argument("-P", "--txt", help="Export result to txt")
     group.add_argument("-U", "--url", help="A youtube url of a video. The model will be yolo and the images and videos folder will be ignored")
     parser.add_argument("-F", "--framerate", type=int, default=15, help="the framerate of the video, only works on videos")
     # Add a data source argument
