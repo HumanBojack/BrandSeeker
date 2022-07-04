@@ -13,6 +13,8 @@ from utils.torch_utils import select_device, time_sync
 
 from pathlib import Path
 
+from tqdm import tqdm
+
 # weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
 # source=ROOT / 'data/images',  # file/dir/URL/glob, 0 for webcam
 # data=ROOT / 'data/coco128.yaml',  # dataset.yaml path
@@ -58,15 +60,19 @@ def predict(url, framerate, source, save_dir):
     assert dataset.nf == 1, f"There must be a single video file, {dataset.nf} were given"
     bs = 1  # batch_size
 
+    # Get some informations about the video
+    path, im, im0s, vid_cap, s, frame = dataset.__iter__().__next__()
+    initial_framerate = vid_cap.get(cv2.CAP_PROP_FPS)
+    real_framerate = initial_framerate / round(initial_framerate / framerate)
+    total_frames = dataset.frames
+    dataset.frame = 0
+
+
     pred_timing_start = time_sync()
     dt, seen = [0.0, 0.0, 0.0], 0
-    for path, im, im0s, vid_cap, s in dataset:
+    for path, im, im0s, vid_cap, s, frame in tqdm(dataset, total=total_frames):
+
         # skip the frame if it isn't in the specified framerate
-        frame = getattr(dataset, 'frame', 0)
-        if frame == 1:
-            initial_framerate = vid_cap.get(cv2.CAP_PROP_FPS)
-            real_framerate = initial_framerate / round(initial_framerate / framerate)
-            
         if frame % round(initial_framerate / framerate) != 0:
             continue
 
@@ -91,8 +97,8 @@ def predict(url, framerate, source, save_dir):
 
 
         has_prediction = len(pred[0])
-        if has_prediction:
-            print(s) # save to the file
+        # if has_prediction:
+        #     print(s) # save to the file
 
     pred_timing_stop = time_sync()
     pred_timing = pred_timing_stop - pred_timing_start
