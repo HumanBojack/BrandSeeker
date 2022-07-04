@@ -130,17 +130,19 @@ def load_frames(video_path, output_dict):
     
     os.makedirs('tmp', exist_ok=True)
 
-    #Collect the right images
+    # Create a capture from video and get fps, number of frames and calculate video length 
     cap = cv2.VideoCapture(video_path)
-    fps = cap.get(cv2.CAP_PROP_FPS)      # OpenCV2 version 2 used "CV_CAP_PROP_FPS"
-    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) 
     length = frame_count/fps
 
     frame_seq_list = []
     brand_list = []
     confidence_list = []
     bbx = []
-        
+    
+    # TODO: Add loop and conditions to get values from the raw output.txt if chosen
+ 
     for key, value in output_dict.items():
         # brand
         brand_list.append(key)
@@ -168,9 +170,10 @@ def load_frames(video_path, output_dict):
             path_cropped_list.append('tmp/frame_'+str(frame_seq_list[i])+'_cropped.jpg')
     
     cap.release()
-    
+
     video_name = os.path.basename(video_path).split(".")[0].replace(" ", "_")
     video_name = unicodedata.normalize('NFD', video_name).encode('ascii', 'ignore')
+    video_name = video_name.decode("utf-8")
 
     return video_name, length, confidence_list, brand_list, path_list, path_cropped_list, frame_seq_list
 

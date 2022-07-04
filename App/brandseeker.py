@@ -131,18 +131,11 @@ def predict(url, framerate, source, save_dir, save_unprocessed_output):
                 brand_count[label]["bbox"].append(brand[0:4])
                 brand_count[label]["confidence"].append(brand[4])
                 brand_count[label]["frame"].append(frame)
-
     
-
-    filtered_output = filter_output(brand_count, framerate)
-    pdf_generator(path, filtered_output, save_dir)
-    
-    # This is a temporary output for the devs to see how the output looks like
-    # It should be useful when creating the method filtering the outputs
     # Generate an output if a prediction has been made
     if brand_count:
         filtered_output = filter_output(brand_count, framerate)
-        pdf_generator(path, filtered_output)
+        pdf_generator(path, filtered_output, save_dir)
 
         if save_unprocessed_output:
             with open(f"{save_dir}/output.txt", "w") as f:
