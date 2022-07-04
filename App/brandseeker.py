@@ -60,6 +60,8 @@ def predict(url, framerate, source, save_dir):
     assert dataset.nf == 1, f"There must be a single video file, {dataset.nf} were given"
     bs = 1  # batch_size
 
+    brand_count = {}
+
     # Get some informations about the video
     path, im, im0s, vid_cap, s, frame = dataset.__iter__().__next__()
     initial_framerate = vid_cap.get(cv2.CAP_PROP_FPS)
@@ -94,34 +96,32 @@ def predict(url, framerate, source, save_dir):
 
         # NMS
         pred = non_max_suppression(pred, conf_thres=0.35, max_det=5)
+        pred = pred[0].tolist()
         dt[2] += time_sync() - t3
 
-            has_prediction = len(pred)         
-            if has_prediction:
-                pred = pred[0].tolist()
-                label = names[int(pred[5])]
+        has_prediction = len(pred)
+        if has_prediction:
+            for brand in pred:
+                label = names[int(brand[5])]
 
                 # Retrieve or create a dictionnary key for the label and add the bbox, confidence and frame of the prediction
                 brand_count[label] = brand_count.get(label, {"bbox": [], "confidence": [], "frame": []})
-                brand_count[label]["bbox"].append(pred[0:4])
-                brand_count[label]["confidence"].append(pred[4])
+                brand_count[label]["bbox"].append(brand[0:4])
+                brand_count[label]["confidence"].append(brand[4])
                 brand_count[label]["frame"].append(frame)
 
-        # This is a temporary output for the devs to see how the output looks like
-        # It should be useful when creating the method filtering the outputs
-        if brand_count:
-            from pprint import pprint, pformat
-            pprint(brand_count)
-            with open("output.txt", "w") as f:
-                f.write(pformat(brand_count))
+    # This is a temporary output for the devs to see how the output looks like
+    # It should be useful when creating the method filtering the outputs
+    if brand_count:
+        from pprint import pprint, pformat
+        # pprint(brand_count)
+        with open("output.txt", "w") as f:
+            f.write(pformat(brand_count))
 
-        has_prediction = len(pred[0])
-        # if has_prediction:
-        #     print(s) # save to the file
 
     pred_timing_stop = time_sync()
     pred_timing = pred_timing_stop - pred_timing_start
-    print(f"Pred took {pred_timing}s ({real_framerate / pred_timing}fps)")
+    print("Pred took %.2fs (%.2ffps)" % (pred_timing, ((total_frames / initial_framerate) * real_framerate) / pred_timing))
 
 
 if __name__ == "__main__":
