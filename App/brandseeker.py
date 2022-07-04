@@ -57,7 +57,7 @@ def predict(url, framerate):
     stride, names, pt = model.stride, model.names, model.pt
     imgsz = check_img_size((640, 640), s=stride)  # check image size might want to remove
 
-    dataset = LoadImages(source, img_size=imgsz, stride=stride, auto=pt)
+    dataset = LoadImages(source, img_size=imgsz, stride=stride, auto=pt, only_vids=True)
     bs = 1  # batch_size
 
     pred_timing_start = time_sync()
