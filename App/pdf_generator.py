@@ -130,26 +130,6 @@ def load_frames(video_path, output_dict):
         print("Error: %s : %s" % (tmp_path, e.strerror))
     
     os.makedirs('img_tmp', exist_ok=True)
-    
-    # Sample for test
-    TEST_DICT = {'Displate': [0.17413793299531197,
-    0.7290941774845123,
-    6728,
-    [164.1377716064453,
-    189.26400756835938,
-    478.53680419921875,
-    295.28814697265625]],
-    'GFuel': [0.21769244941742322,
-    0.616112232208252,
-    4765,
-    [174.75082397460938,
-    102.81185150146484,
-    343.7975769042969,
-    163.09121704101562]],
-    'Winamax': [0.09757052368013214,
-    0.41104447841644287,
-    447,
-    [83.57308197021484, 56.4051399230957, 117.9732437133789, 79.14286041259766]]}
 
     #Collect the right images
     cap = cv2.VideoCapture(video_path)
@@ -179,6 +159,7 @@ def load_frames(video_path, output_dict):
         cap.set(1, frame_seq_list[i])  # Where frame_no is the frame you want
         ret, frame = cap.read()  # Read the frame
         if ret:
+            # ymin, ymax, xmin, xmax
             cropped_frame = frame[int(bbx[i][1]):int(bbx[i][3]), int(bbx[i][0]):int(bbx[i][2])]
             cv2.imwrite('img_tmp/frame_'+str(frame_seq_list[i])+'.jpg', frame)
             cv2.imwrite('img_tmp/frame_'+str(frame_seq_list[i])+'_cropped.jpg', cropped_frame)
@@ -191,9 +172,18 @@ def load_frames(video_path, output_dict):
     return video_name, length, confidence_list, brand_list, path_list, path_cropped_list, frame_seq_list
 
 def pdf_generator(video_path, output_dict):
-    
+    """
+        _summary_: This function render the pdf 
+        
+        args: video_path: [str] | path to the video
+              output_dict: [dict] | output dictionnary after brandseeker algorithm output filter
+              
+        return: output.pdf
+    """
     # Write frames and return a path list
     video_name, length, confidence_list, brand_list, path_list, path_cropped_list, frame_seq_list = load_frames(video_path, output_dict)
+    
+    # Video length in m, s
     minutes = int(length/60)
     seconds = length%60
     
@@ -215,7 +205,7 @@ def pdf_generator(video_path, output_dict):
             font_size=Decimal(20)
         )
     )
-
+    # Add qr code
     qr_code: LayoutElement = Barcode(
         data="https://github.com/HumanBojack/BrandSeeker",
         width=Decimal(64),
@@ -241,13 +231,14 @@ def pdf_generator(video_path, output_dict):
         )
         .no_borders()
     )
+    
     # Title
     layout.add(
         Paragraph(
             str(video_name), font_color=HexColor("#283592"), font_size=Decimal(34)
         )
     )
-    # Subtitle
+    # Subtitles
     layout.add(
         Paragraph(
             "Date: "+str(date.today().strftime("%B %d, %Y")),
@@ -262,6 +253,7 @@ def pdf_generator(video_path, output_dict):
             font_size=Decimal(11),
         )
     )
+    # Add each pictures
     for i in range(0, len(path_list)):
         layout.add(
         FixedColumnWidthTable(
@@ -294,8 +286,8 @@ def pdf_generator(video_path, output_dict):
             .add(Paragraph("Median confidence: " + str(confidence_list[i])))
             .add(Paragraph("Detected bounding box: "))
             .add(Image(Path(path_cropped_list[i],                    
-                        width=Decimal(16),
-                        height=Decimal(16))))
+                        width=Decimal(128),
+                        height=Decimal(128))))
         )
         .no_borders()
     )
