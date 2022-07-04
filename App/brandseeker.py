@@ -12,11 +12,8 @@ from utils.plots import Annotator, colors, save_one_box
 from utils.torch_utils import select_device, time_sync
 
 from pathlib import Path
+from tqdm.autonotebook import tqdm
 
-if is_colab():
-    from tqdm.notebook import tqdm
-else:
-    from tqdm import tqdm
 
 # weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
 # source=ROOT / 'data/images',  # file/dir/URL/glob, 0 for webcam
