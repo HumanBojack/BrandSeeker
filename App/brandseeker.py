@@ -3,6 +3,8 @@ import argparse
 # utils.notebook_init()
 # from models.yolov5 import detect
 import torch
+import torch.backends.cudnn as cudnn
+
 from PIL import Image
 import cv2
 
@@ -43,9 +45,12 @@ from pathlib import Path
 
 def predict(url, framerate):
     source = "./images" # needs to be changed later
+    if url:
+        source = url
 
     is_file = Path(source).suffix[1:] in (IMG_FORMATS + VID_FORMATS)
     is_url = source.lower().startswith(('rtsp://', 'rtmp://', 'http://', 'https://'))
+    webcam = source.isnumeric() or source.endswith('.txt') or (is_url and not is_file)
     if is_url and is_file:
         source = check_file(source)
 
@@ -57,8 +62,14 @@ def predict(url, framerate):
     stride, names, pt = model.stride, model.names, model.pt
     imgsz = check_img_size((640, 640), s=stride)  # check image size might want to remove
 
-    dataset = LoadImages(source, img_size=imgsz, stride=stride, auto=pt)
-    bs = 1  # batch_size
+    if webcam:
+        view_img = check_imshow()
+        cudnn.benchmark = True  # set True to speed up constant image size inference
+        dataset = LoadStreams(source, img_size=imgsz, stride=stride, auto=pt)
+        bs = len(dataset)  # batch_size
+    else:
+        dataset = LoadImages(source, img_size=imgsz, stride=stride, auto=pt)
+        bs = 1  # batch_size
 
     pred_timing_start = time_sync()
 
