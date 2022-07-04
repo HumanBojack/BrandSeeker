@@ -112,17 +112,16 @@ def predict(url, framerate, source, save_dir):
                 brand_count[label]["confidence"].append(brand[4])
                 brand_count[label]["frame"].append(frame)
 
-    # This is a temporary output for the devs to see how the output looks like
-    # It should be useful when creating the method filtering the outputs
-
-    filtered_output = filter_output(brand_count, framerate)
-    pdf_generator(path, filtered_output)
-
+    # Generate an output if a prediction has been made
     if brand_count:
-        from pprint import pprint, pformat
-        # pprint(brand_count)
-        with open("output.txt", "w") as f:
-            f.write(pformat(brand_count))
+        filtered_output = filter_output(brand_count, framerate)
+        pdf_generator(path, filtered_output)
+
+        # from pprint import pprint, pformat
+        # with open("output.txt", "w") as f:
+        #     f.write(pformat(brand_count))
+    else:
+        print("No prediction has been made")
 
     pred_timing_stop = time_sync()
     pred_timing = pred_timing_stop - pred_timing_start
