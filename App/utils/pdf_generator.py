@@ -120,7 +120,7 @@ def add_colored_artwork_bottom_right_corner(page: Page):
     ).layout(page, r)
 
 def load_frames(video_path, output_dict):
-    
+
     tmp_path = 'tmp'
 
     try:
@@ -136,13 +136,17 @@ def load_frames(video_path, output_dict):
     frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) 
     length = frame_count/fps
 
+    # create all list needed
     frame_seq_list = []
     brand_list = []
     confidence_list = []
     bbx = []
-    
+    path_list = []
+    path_cropped_list= []
+
     # TODO: Add loop and conditions to get values from the raw output.txt if chosen
- 
+    
+    # Get values needed from filtered dict
     for key, value in output_dict.items():
         # brand
         brand_list.append(key)
@@ -153,9 +157,7 @@ def load_frames(video_path, output_dict):
         # bbx
         bbx.append(value[3])
 
-    path_list = []
-    path_cropped_list= []
-
+    # Save frames and cropped frames with bbx axes
     for i, elem in enumerate(frame_seq_list):
 
         bbx = [max(0, int(bbx[i][1])), max(0, int(bbx[i][3])), max(0, int(bbx[i][0])), max(0, int(bbx[i][2]))] # ymin, ymax, xmin, xmax
@@ -169,8 +171,10 @@ def load_frames(video_path, output_dict):
             path_list.append('tmp/frame_'+str(frame_seq_list[i])+'.jpg')
             path_cropped_list.append('tmp/frame_'+str(frame_seq_list[i])+'_cropped.jpg')
     
+    # Release capture
     cap.release()
 
+    # Normalise all caracters and replace space with underscore for the saved pdf name
     video_name = os.path.basename(video_path).split(".")[0].replace(" ", "_")
     video_name = unicodedata.normalize('NFD', video_name).encode('ascii', 'ignore')
     video_name = video_name.decode("utf-8")
