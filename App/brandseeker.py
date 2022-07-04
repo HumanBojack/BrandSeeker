@@ -53,24 +53,25 @@ from tqdm.autonotebook import tqdm
 def predict(url, framerate, source, save_dir):
 
     if url:
-        # check if the url is a valid youtube url
-        r = "((http(s)?:\/\/)?)(www\.)?((youtube\.com\/)|(youtu.be\/))[\S]+"
-        assert re.match(r, url), f"The url needs to be a valid youtube url ({url})"
-
-        # Download the video and save it to the specified path
-        print('Downloading the video')
-        if download(url, source):
-            print('Successfully downloaded the video')
-        else:
-            print("Can't download the video")
+        is_file = Path(url).suffix[1:] in (IMG_FORMATS + VID_FORMATS)
+        is_url = url.lower().startswith(('rtsp://', 'rtmp://', 'http://', 'https://'))
+        assert is_url, f"URL is incorrect ({url})"
         
+        # Download the file or the youtube video
+        if is_file:
+            check_file(url, save_dir=source)
+        else:
+            # check if the url is a valid youtube url
+            r = "((http(s)?:\/\/)?)(www\.)?((youtube\.com\/)|(youtu.be\/))[\S]+"
+            assert re.match(r, url), f"The url needs to be a valid youtube url ({url})"
 
-
-    is_file = Path(source).suffix[1:] in (IMG_FORMATS + VID_FORMATS)
-    is_url = source.lower().startswith(('rtsp://', 'rtmp://', 'http://', 'https://'))
-    webcam = source.isnumeric() or source.endswith('.txt') or (is_url and not is_file)
-    if is_url and is_file:
-        source = check_file(source)
+            # Download the video and save it to the specified path
+            print('Downloading the video')
+            if download(url, source):
+                print('Successfully downloaded the video')
+            else:
+                print("Can't download the video")
+        
 
     device = select_device('')
     model = torch.hub.load('ultralytics/yolov5', 'custom', path='weights/best.pt')
@@ -99,7 +100,6 @@ def predict(url, framerate, source, save_dir):
         # skip the frame if it isn't in the specified framerate
         if frame % round(initial_framerate / framerate) != 0:
             continue
-
 
         t1 = time_sync()
         im = torch.from_numpy(im).to(device)
@@ -149,7 +149,7 @@ def predict(url, framerate, source, save_dir):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("-U", "--url", help="A youtube url of a video. The model will be yolo and the images and videos folder will be ignored")
+    parser.add_argument("-U", "--url", help="A video url. It can be from youtube or a link to a file.")
     parser.add_argument("-F", "--framerate", type=int, default=15, help="The framerate of the analyzed video. A higher one will take longer to process.")
     parser.add_argument("-S", "--source", default="./input_video", help="The folder where your video is.")
     parser.add_argument("-O", "--save-dir", default="./predictions", help="The folder where the pdf with predictions will be.")
