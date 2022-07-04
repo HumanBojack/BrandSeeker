@@ -3,13 +3,18 @@ import argparse
 # utils.notebook_init()
 # from models.yolov5 import detect
 import torch
+import torch.backends.cudnn as cudnn
+
 from PIL import Image
 import cv2
+import re
 
 from utils.dataloaders import IMG_FORMATS, VID_FORMATS, LoadImages, LoadStreams
 from utils.general import (LOGGER, check_file, check_img_size, check_imshow, check_requirements, colorstr, cv2, increment_path, non_max_suppression, print_args, scale_coords, strip_optimizer, xyxy2xywh, is_colab)
 from utils.plots import Annotator, colors, save_one_box
 from utils.torch_utils import select_device, time_sync
+
+from utils.video_downloader import download
 from utils.filtering import filter_output
 from utils.pdf_generator import pdf_generator
 
@@ -45,12 +50,28 @@ from tqdm.autonotebook import tqdm
 # dnn=False,  # use OpenCV DNN for ONNX inference
 
 
-def predict(url, framerate, source, save_dir):
+def predict(url, framerate, source, save_dir, save_unprocessed_output):
 
-    is_file = Path(source).suffix[1:] in (IMG_FORMATS + VID_FORMATS)
-    is_url = source.lower().startswith(('rtsp://', 'rtmp://', 'http://', 'https://'))
-    if is_url and is_file:
-        source = check_file(source)
+    if url:
+        is_file = Path(url).suffix[1:] in (IMG_FORMATS + VID_FORMATS)
+        is_url = url.lower().startswith(('rtsp://', 'rtmp://', 'http://', 'https://'))
+        assert is_url, f"URL is incorrect ({url})"
+        
+        # Download the file or the youtube video
+        if is_file:
+            check_file(url, save_dir=source)
+        else:
+            # check if the url is a valid youtube url
+            r = "((http(s)?:\/\/)?)(www\.)?((youtube\.com\/)|(youtu.be\/))[\S]+"
+            assert re.match(r, url), f"The url needs to be a valid youtube url ({url})"
+
+            # Download the video and save it to the specified path
+            print('Downloading the video')
+            if download(url, source):
+                print('Successfully downloaded the video')
+            else:
+                print("Can't download the video")
+        
 
     device = select_device('')
     model = torch.hub.load('ultralytics/yolov5', 'custom', path='weights/best.pt')
@@ -79,7 +100,6 @@ def predict(url, framerate, source, save_dir):
         # skip the frame if it isn't in the specified framerate
         if frame % round(initial_framerate / framerate) != 0:
             continue
-
 
         t1 = time_sync()
         im = torch.from_numpy(im).to(device)
@@ -112,28 +132,36 @@ def predict(url, framerate, source, save_dir):
                 brand_count[label]["confidence"].append(brand[4])
                 brand_count[label]["frame"].append(frame)
 
-    # This is a temporary output for the devs to see how the output looks like
-    # It should be useful when creating the method filtering the outputs
+    
 
     filtered_output = filter_output(brand_count, framerate)
     pdf_generator(path, filtered_output, save_dir)
-
+    
+    # This is a temporary output for the devs to see how the output looks like
+    # It should be useful when creating the method filtering the outputs
+    # Generate an output if a prediction has been made
     if brand_count:
-        from pprint import pprint, pformat
-        # pprint(brand_count)
-        with open("output.txt", "w") as f:
-            f.write(pformat(brand_count))
+        filtered_output = filter_output(brand_count, framerate)
+        pdf_generator(path, filtered_output)
+
+        if save_unprocessed_output:
+            with open(f"{save_dir}/output.txt", "w") as f:
+                f.write(str(brand_count))
+    else:
+        print("No prediction has been made")
+
 
     pred_timing_stop = time_sync()
     pred_timing = pred_timing_stop - pred_timing_start
     print("Pred took %.2fs (%.2ffps)" % (pred_timing, ((total_frames / initial_framerate) * real_framerate) / pred_timing))
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("-U", "--url", help="A youtube url of a video. The model will be yolo and the images and videos folder will be ignored")
+    parser.add_argument("-U", "--url", help="A video url. It can be from youtube or a link to a file.")
     parser.add_argument("-F", "--framerate", type=int, default=15, help="The framerate of the analyzed video. A higher one will take longer to process.")
     parser.add_argument("-S", "--source", default="./input_video", help="The folder where your video is.")
     parser.add_argument("-O", "--save-dir", default="./predictions", help="The folder where the pdf with predictions will be.")
+    parser.add_argument("--save-unprocessed-output", default=False, action='store_true', help="Save an unprocessed dict containing all bounding boxes, frames and confidences.")
     args = parser.parse_args()
-
     predict(**vars(args))
