@@ -41,15 +41,12 @@ from pathlib import Path
 # dnn=False,  # use OpenCV DNN for ONNX inference
 
 
-def predict(url, framerate):
-    source = "./images" # needs to be changed later
+def predict(url, framerate, source, save_dir):
 
     is_file = Path(source).suffix[1:] in (IMG_FORMATS + VID_FORMATS)
     is_url = source.lower().startswith(('rtsp://', 'rtmp://', 'http://', 'https://'))
     if is_url and is_file:
         source = check_file(source)
-
-    save_dir = "./predictions"
 
     device = select_device('')
     model = torch.hub.load('ultralytics/yolov5', 'custom', path='weights/best.pt')
@@ -106,8 +103,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-U", "--url", help="A youtube url of a video. The model will be yolo and the images and videos folder will be ignored")
     parser.add_argument("-F", "--framerate", type=int, default=15, help="The framerate of the analyzed video. A higher one will take longer to process.")
-    # Add a data source argument
-    # remove the model choice?
+    parser.add_argument("-S", "--source", default="./input_video", help="The folder where your video is.")
+    parser.add_argument("-O", "--save-dir", default="./predictions", help="The folder where the pdf with predictions will be.")
     args = parser.parse_args()
 
     predict(**vars(args))
