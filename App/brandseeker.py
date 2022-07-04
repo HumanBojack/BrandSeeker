@@ -116,7 +116,7 @@ def predict(url, framerate, source, save_dir):
     # It should be useful when creating the method filtering the outputs
 
     filtered_output = filter_output(brand_count, framerate)
-    pdf_generator(path, filtered_output)
+    pdf_generator(path, filtered_output, save_dir)
 
     if brand_count:
         from pprint import pprint, pformat

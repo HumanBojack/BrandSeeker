@@ -24,7 +24,7 @@ import typing
 import random
 import shutil
 import os
-import re
+import unicodedata
 
 def add_gray_artwork_upper_right_corner(page: Page):
     """
@@ -153,25 +153,28 @@ def load_frames(video_path, output_dict):
 
     path_list = []
     path_cropped_list= []
-    
-    for i in range(0, len(frame_seq_list)):
-        # for i, elem in enumerate(frame_seq_list):
-        cap.set(1, frame_seq_list[i])  # Where frame_no is the frame you want
+
+    for i, elem in enumerate(frame_seq_list):
+
+        bbx = [max(0, int(bbx[i][1])), max(0, int(bbx[i][3])), max(0, int(bbx[i][0])), max(0, int(bbx[i][2]))] # ymin, ymax, xmin, xmax
+        cap.set(1, elem)  # Where frame_no is the frame you want
         ret, frame = cap.read()  # Read the frame
+
         if ret:
-            # ymin, ymax, xmin, xmax
-            cropped_frame = frame[max(0, int(bbx[i][1])):max(0, int(bbx[i][3])), max(0, int(bbx[i][0])):max(0, int(bbx[i][2]))]
+            cropped_frame = frame[bbx[0]:bbx[1], bbx[2]:bbx[3]]
             cv2.imwrite('tmp/frame_'+str(frame_seq_list[i])+'.jpg', frame)
             cv2.imwrite('tmp/frame_'+str(frame_seq_list[i])+'_cropped.jpg', cropped_frame)
             path_list.append('tmp/frame_'+str(frame_seq_list[i])+'.jpg')
             path_cropped_list.append('tmp/frame_'+str(frame_seq_list[i])+'_cropped.jpg')
     
     cap.release()
-    video_name = os.path.basename(video_path).split(".")[0]
+    
+    video_name = os.path.basename(video_path).split(".")[0].replace(" ", "_")
+    video_name = unicodedata.normalize('NFD', video_name).encode('ascii', 'ignore')
 
     return video_name, length, confidence_list, brand_list, path_list, path_cropped_list, frame_seq_list
 
-def pdf_generator(video_path, output_dict):
+def pdf_generator(video_path, output_dict, save_dir):
     """
         _summary_: This function render the pdf 
     
@@ -296,5 +299,5 @@ def pdf_generator(video_path, output_dict):
         add_colored_artwork_bottom_right_corner(pdf.get_page(i))
         add_gray_artwork_upper_right_corner(pdf.get_page(i))
 
-    with open("predictions/output.pdf", "wb") as pdf_file_handle:
+    with open(save_dir + '/' + str(video_name) + '.pdf', "wb") as pdf_file_handle:
         PDF.dumps(pdf_file_handle, pdf)
