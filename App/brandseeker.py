@@ -10,6 +10,8 @@ from utils.dataloaders import IMG_FORMATS, VID_FORMATS, LoadImages, LoadStreams
 from utils.general import (LOGGER, check_file, check_img_size, check_imshow, check_requirements, colorstr, cv2, increment_path, non_max_suppression, print_args, scale_coords, strip_optimizer, xyxy2xywh, is_colab)
 from utils.plots import Annotator, colors, save_one_box
 from utils.torch_utils import select_device, time_sync
+from utils.filtering import filter_output
+from utils.pdf_generator import pdf_generator
 
 from pathlib import Path
 from tqdm.autonotebook import tqdm
@@ -112,17 +114,19 @@ def predict(url, framerate, source, save_dir):
 
     # This is a temporary output for the devs to see how the output looks like
     # It should be useful when creating the method filtering the outputs
+
+    filtered_output = filter_output(brand_count, framerate)
+    pdf_generator(path, filtered_output)
+
     if brand_count:
         from pprint import pprint, pformat
         # pprint(brand_count)
         with open("output.txt", "w") as f:
             f.write(pformat(brand_count))
 
-
     pred_timing_stop = time_sync()
     pred_timing = pred_timing_stop - pred_timing_start
     print("Pred took %.2fs (%.2ffps)" % (pred_timing, ((total_frames / initial_framerate) * real_framerate) / pred_timing))
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)

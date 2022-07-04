@@ -24,6 +24,7 @@ import typing
 import random
 import shutil
 import os
+import re
 
 def add_gray_artwork_upper_right_corner(page: Page):
     """
@@ -120,13 +121,14 @@ def add_colored_artwork_bottom_right_corner(page: Page):
 
 def load_frames(video_path, output_dict):
     
-    tmp_path = 'img_tmp'
+    tmp_path = 'tmp'
+
     try:
         shutil.rmtree(tmp_path)
     except OSError as e:
-        print("Error: %s : %s" % (tmp_path, e.strerror))
+        pass
     
-    os.makedirs('img_tmp', exist_ok=True)
+    os.makedirs('tmp', exist_ok=True)
 
     #Collect the right images
     cap = cv2.VideoCapture(video_path)
@@ -139,42 +141,43 @@ def load_frames(video_path, output_dict):
     confidence_list = []
     bbx = []
         
-    for i in output_dict:
+    for key, value in output_dict.items():
         # brand
-        brand_list.append(i)
+        brand_list.append(key)
         # median confidence
-        confidence_list.append(output_dict[i][1])
+        confidence_list.append(value[1])
         # frame
-        frame_seq_list.append(output_dict[i][2])
+        frame_seq_list.append(value[2])
         # bbx
-        bbx.append(output_dict[i][3])
+        bbx.append(value[3])
 
     path_list = []
     path_cropped_list= []
     
     for i in range(0, len(frame_seq_list)):
+        # for i, elem in enumerate(frame_seq_list):
         cap.set(1, frame_seq_list[i])  # Where frame_no is the frame you want
         ret, frame = cap.read()  # Read the frame
         if ret:
             # ymin, ymax, xmin, xmax
-            cropped_frame = frame[int(bbx[i][1]):int(bbx[i][3]), int(bbx[i][0]):int(bbx[i][2])]
-            cv2.imwrite('img_tmp/frame_'+str(frame_seq_list[i])+'.jpg', frame)
-            cv2.imwrite('img_tmp/frame_'+str(frame_seq_list[i])+'_cropped.jpg', cropped_frame)
-            path_list.append('img_tmp/frame_'+str(frame_seq_list[i])+'.jpg')
-            path_cropped_list.append('img_tmp/frame_'+str(frame_seq_list[i])+'_cropped.jpg')
+            cropped_frame = frame[max(0, int(bbx[i][1])):max(0, int(bbx[i][3])), max(0, int(bbx[i][0])):max(0, int(bbx[i][2]))]
+            cv2.imwrite('tmp/frame_'+str(frame_seq_list[i])+'.jpg', frame)
+            cv2.imwrite('tmp/frame_'+str(frame_seq_list[i])+'_cropped.jpg', cropped_frame)
+            path_list.append('tmp/frame_'+str(frame_seq_list[i])+'.jpg')
+            path_cropped_list.append('tmp/frame_'+str(frame_seq_list[i])+'_cropped.jpg')
     
     cap.release()
-    video_name = video_path.split(".")[0]
+    video_name = os.path.basename(video_path).split(".")[0]
 
     return video_name, length, confidence_list, brand_list, path_list, path_cropped_list, frame_seq_list
 
 def pdf_generator(video_path, output_dict):
     """
         _summary_: This function render the pdf 
-        
+    
         args: video_path: [str] | path to the video
               output_dict: [dict] | output dictionnary after brandseeker algorithm output filter
-              
+    
         return: output.pdf
     """
     # Write frames and return a path list
@@ -293,5 +296,5 @@ def pdf_generator(video_path, output_dict):
         add_colored_artwork_bottom_right_corner(pdf.get_page(i))
         add_gray_artwork_upper_right_corner(pdf.get_page(i))
 
-    with open("output.pdf", "wb") as pdf_file_handle:
+    with open("predictions/output.pdf", "wb") as pdf_file_handle:
         PDF.dumps(pdf_file_handle, pdf)
