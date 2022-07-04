@@ -102,7 +102,7 @@ def predict(url, framerate, source, save_dir):
 
     pred_timing_stop = time_sync()
     pred_timing = pred_timing_stop - pred_timing_start
-    print(f"Pred took {pred_timing}s ({pred_timing / real_framerate}fps)")
+    print(f"Pred took {pred_timing}s ({real_framerate / pred_timing}fps)")
 
 
 if __name__ == "__main__":
