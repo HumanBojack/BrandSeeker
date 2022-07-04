@@ -5,7 +5,7 @@ import argparse
 import torch
 from PIL import Image
 import cv2
-from pdf import PDF
+# from pdf import PDF
 import json
 # from models.yolov5.models.common import DetectMultiBackend
 
@@ -107,21 +107,6 @@ def predict(args):
 
         # results = model(imgs, size=640)
         # results.print()
-
-
-    with open('output_displate.txt', 'r') as f:
-        data = json.load(f)
-
-    # load instance
-    pdf = PDF()
-
-    # add images + stats
-    chapter = 0
-    for key, context  in data.items():
-        chapter += 1
-        pdf.print_chapter(chapter, key, str(context['']))
-
-    pdf.release()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
