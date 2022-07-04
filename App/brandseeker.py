@@ -54,7 +54,7 @@ def predict(url, framerate, source, save_dir):
     model = torch.hub.load('ultralytics/yolov5', 'custom', path='weights/best.pt')
 
     stride, names, pt = model.stride, model.names, model.pt
-    imgsz = check_img_size((640, 640), s=stride)  # check image size might want to remove
+    imgsz = check_img_size((640, 640), s=stride)  # check image size, might want to remove
 
     dataset = LoadImages(source, img_size=imgsz, stride=stride, auto=pt, only_vids=True)
     assert dataset.nf == 1, f"There must be a single video file, {dataset.nf} were given"
@@ -67,7 +67,7 @@ def predict(url, framerate, source, save_dir):
     total_frames = dataset.frames
     dataset.frame = 0
 
-
+    # Loop on frames
     pred_timing_start = time_sync()
     dt, seen = [0.0, 0.0, 0.0], 0
     for path, im, im0s, vid_cap, s, frame in tqdm(dataset, total=total_frames):
@@ -75,6 +75,7 @@ def predict(url, framerate, source, save_dir):
         # skip the frame if it isn't in the specified framerate
         if frame % round(initial_framerate / framerate) != 0:
             continue
+
 
         t1 = time_sync()
         im = torch.from_numpy(im).to(device)
@@ -95,6 +96,24 @@ def predict(url, framerate, source, save_dir):
         pred = non_max_suppression(pred, conf_thres=0.35, max_det=5)
         dt[2] += time_sync() - t3
 
+            has_prediction = len(pred)         
+            if has_prediction:
+                pred = pred[0].tolist()
+                label = names[int(pred[5])]
+
+                # Retrieve or create a dictionnary key for the label and add the bbox, confidence and frame of the prediction
+                brand_count[label] = brand_count.get(label, {"bbox": [], "confidence": [], "frame": []})
+                brand_count[label]["bbox"].append(pred[0:4])
+                brand_count[label]["confidence"].append(pred[4])
+                brand_count[label]["frame"].append(frame)
+
+        # This is a temporary output for the devs to see how the output looks like
+        # It should be useful when creating the method filtering the outputs
+        if brand_count:
+            from pprint import pprint, pformat
+            pprint(brand_count)
+            with open("output.txt", "w") as f:
+                f.write(pformat(brand_count))
 
         has_prediction = len(pred[0])
         # if has_prediction:
