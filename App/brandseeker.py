@@ -58,10 +58,10 @@ def predict(url, framerate):
     imgsz = check_img_size((640, 640), s=stride)  # check image size might want to remove
 
     dataset = LoadImages(source, img_size=imgsz, stride=stride, auto=pt, only_vids=True)
+    assert dataset.nf == 1, f"There must be a single video file, {dataset.nf} were given"
     bs = 1  # batch_size
 
     pred_timing_start = time_sync()
-
     dt, seen = [0.0, 0.0, 0.0], 0
     for path, im, im0s, vid_cap, s in dataset:
         # skip the frame if it isn't in the specified framerate
@@ -99,7 +99,7 @@ def predict(url, framerate):
 
     pred_timing_stop = time_sync()
     pred_timing = pred_timing_stop - pred_timing_start
-    print(f"Pred took {pred_timing}s ({pred_timing / real_framerate}s/frame)")
+    print(f"Pred took {pred_timing}s ({pred_timing / real_framerate}fps)")
 
 
 if __name__ == "__main__":
