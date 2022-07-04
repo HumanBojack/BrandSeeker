@@ -50,7 +50,7 @@ from tqdm.autonotebook import tqdm
 # dnn=False,  # use OpenCV DNN for ONNX inference
 
 
-def predict(url, framerate, source, save_dir):
+def predict(url, framerate, source, save_dir, save_unprocessed_output):
 
     if url:
         is_file = Path(url).suffix[1:] in (IMG_FORMATS + VID_FORMATS)
@@ -132,20 +132,23 @@ def predict(url, framerate, source, save_dir):
                 brand_count[label]["confidence"].append(brand[4])
                 brand_count[label]["frame"].append(frame)
 
+
     # Generate an output if a prediction has been made
     if brand_count:
         filtered_output = filter_output(brand_count, framerate)
         pdf_generator(path, filtered_output)
 
-        # from pprint import pprint, pformat
-        # with open("output.txt", "w") as f:
-        #     f.write(pformat(brand_count))
+        if save_unprocessed_output:
+            with open(f"{save_dir}/output.txt", "w") as f:
+                f.write(str(brand_count))
     else:
         print("No prediction has been made")
+
 
     pred_timing_stop = time_sync()
     pred_timing = pred_timing_stop - pred_timing_start
     print("Pred took %.2fs (%.2ffps)" % (pred_timing, ((total_frames / initial_framerate) * real_framerate) / pred_timing))
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -153,6 +156,6 @@ if __name__ == "__main__":
     parser.add_argument("-F", "--framerate", type=int, default=15, help="The framerate of the analyzed video. A higher one will take longer to process.")
     parser.add_argument("-S", "--source", default="./input_video", help="The folder where your video is.")
     parser.add_argument("-O", "--save-dir", default="./predictions", help="The folder where the pdf with predictions will be.")
+    parser.add_argument("--save-unprocessed-output", default=False, action=argparse.BooleanOptionalAction, help="Save an unprocessed dict containing all bounding boxes, frames and confidences.")
     args = parser.parse_args()
-
     predict(**vars(args))
