@@ -27,7 +27,6 @@ import random
 import shutil
 import os
 
-
 def add_gray_artwork_upper_right_corner(page: Page):
     """
     This method will add a gray artwork of squares and triangles in the upper right corner
