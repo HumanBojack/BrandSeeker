@@ -175,7 +175,7 @@ class _RepeatSampler:
 
 class LoadImages:
     # YOLOv5 image/video dataloader, i.e. `python detect.py --source image.jpg/vid.mp4`
-    def __init__(self, path, img_size=640, stride=32, auto=True):
+    def __init__(self, path, img_size=640, stride=32, auto=True, only_vids=False):
         p = str(Path(path).resolve())  # os-agnostic absolute path
         if '*' in p:
             files = sorted(glob.glob(p, recursive=True))  # glob
@@ -186,7 +186,7 @@ class LoadImages:
         else:
             raise Exception(f'ERROR: {p} does not exist')
 
-        images = [x for x in files if x.split('.')[-1].lower() in IMG_FORMATS]
+        images = [x for x in files if (x.split('.')[-1].lower() in IMG_FORMATS) & (not only_vids)]
         videos = [x for x in files if x.split('.')[-1].lower() in VID_FORMATS]
         ni, nv = len(images), len(videos)
 
@@ -201,8 +201,12 @@ class LoadImages:
             self.new_video(videos[0])  # new video
         else:
             self.cap = None
-        assert self.nf > 0, f'No images or videos found in {p}. ' \
-                            f'Supported formats are:\nimages: {IMG_FORMATS}\nvideos: {VID_FORMATS}'
+        error_str = f'No videos found in {p}. ' \
+                    f'\nSupported formats are: {VID_FORMATS}' if only_vids else \
+                    f'No images or videos found in {p}. ' \
+                    f'Supported formats are:\nimages: {IMG_FORMATS}\nvideos: {VID_FORMATS}'
+
+        assert self.nf > 0, error_str
 
     def __iter__(self):
         self.count = 0
@@ -243,7 +247,7 @@ class LoadImages:
         img = img.transpose((2, 0, 1))[::-1]  # HWC to CHW, BGR to RGB
         img = np.ascontiguousarray(img)
 
-        return path, img, img0, self.cap, s
+        return path, img, img0, self.cap, s, self.frame
 
     def new_video(self, path):
         self.frame = 0

@@ -306,5 +306,3 @@ def pdf_generator(video_path, output_dict):
 
     with open("output.pdf", "wb") as pdf_file_handle:
         PDF.dumps(pdf_file_handle, pdf)
-
-pdf_generator('villebrequin2.mp4', 'output_finale.txt')

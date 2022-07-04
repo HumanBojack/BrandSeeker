@@ -5,16 +5,18 @@ import argparse
 import torch
 from PIL import Image
 import cv2
-# from pdf import PDF
-import json
-# from models.yolov5.models.common import DetectMultiBackend
 
 from utils.dataloaders import IMG_FORMATS, VID_FORMATS, LoadImages, LoadStreams
-from utils.general import (LOGGER, check_file, check_img_size, check_imshow, check_requirements, colorstr, cv2, increment_path, non_max_suppression, print_args, scale_coords, strip_optimizer, xyxy2xywh)
+from utils.general import (LOGGER, check_file, check_img_size, check_imshow, check_requirements, colorstr, cv2, increment_path, non_max_suppression, print_args, scale_coords, strip_optimizer, xyxy2xywh, is_colab)
 from utils.plots import Annotator, colors, save_one_box
 from utils.torch_utils import select_device, time_sync
 
 from pathlib import Path
+
+if is_colab():
+    from tqdm.notebook import tqdm
+else:
+    from tqdm import tqdm
 
 # weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
 # source=ROOT / 'data/images',  # file/dir/URL/glob, 0 for webcam
@@ -43,80 +45,94 @@ from pathlib import Path
 # half=False,  # use FP16 half-precision inference
 # dnn=False,  # use OpenCV DNN for ONNX inference
 
-def predict(args):
-    print(args)
 
-    if args['model'] == 'yolo':
+def predict(url, framerate, source, save_dir):
 
-        source = "./images" # needs to be changed later
+    is_file = Path(source).suffix[1:] in (IMG_FORMATS + VID_FORMATS)
+    is_url = source.lower().startswith(('rtsp://', 'rtmp://', 'http://', 'https://'))
+    if is_url and is_file:
+        source = check_file(source)
 
-        is_file = Path(source).suffix[1:] in (IMG_FORMATS + VID_FORMATS)
-        is_url = source.lower().startswith(('rtsp://', 'rtmp://', 'http://', 'https://'))
-        if is_url and is_file:
-            source = check_file(source)
+    device = select_device('')
+    model = torch.hub.load('ultralytics/yolov5', 'custom', path='weights/best.pt')
 
-        save_dir = "./predictions"
+    stride, names, pt = model.stride, model.names, model.pt
+    imgsz = check_img_size((640, 640), s=stride)  # check image size, might want to remove
 
-        device = select_device('')
-        model = torch.hub.load('ultralytics/yolov5', 'custom', path='weights/best.pt')
+    dataset = LoadImages(source, img_size=imgsz, stride=stride, auto=pt, only_vids=True)
+    assert dataset.nf == 1, f"There must be a single video file, {dataset.nf} were given"
+    bs = 1  # batch_size
 
-        stride, names, pt = model.stride, model.names, model.pt
-        imgsz = check_img_size((640, 640), s=stride)  # check image size might want to remove
+    brand_count = {}
 
-        dataset = LoadImages(source, img_size=imgsz, stride=stride, auto=pt)
-        bs = 1  # batch_size
+    # Get some informations about the video
+    path, im, im0s, vid_cap, s, frame = dataset.__iter__().__next__()
+    initial_framerate = vid_cap.get(cv2.CAP_PROP_FPS)
+    real_framerate = initial_framerate / round(initial_framerate / framerate)
+    total_frames = dataset.frames
+    dataset.frame = 0
 
-        dt, seen = [0.0, 0.0, 0.0], 0
-        for path, im, im0s, vid_cap, s in dataset:
-            t1 = time_sync()
-            im = torch.from_numpy(im).to(device)
-            im = im.float()
-            im /= 255  # 0 - 255 to 0.0 - 1.0
+    # Loop on frames
+    pred_timing_start = time_sync()
+    dt, seen = [0.0, 0.0, 0.0], 0
+    for path, im, im0s, vid_cap, s, frame in tqdm(dataset, total=total_frames):
 
-            if len(im.shape) == 3:
-                im = im[None]  # expand for batch dim
-            t2 = time_sync()
-            dt[0] += t2 - t1
+        # skip the frame if it isn't in the specified framerate
+        if frame % round(initial_framerate / framerate) != 0:
+            continue
 
-            # Inference
-            pred = model(im)
-            t3 = time_sync()
-            dt[1] += t3 - t2
 
-            # NMS
-            pred = non_max_suppression(pred, conf_thres=0.35, max_det=5) # might want to discuss the max nb of detection, iou...
-            dt[2] += time_sync() - t3
+        t1 = time_sync()
+        im = torch.from_numpy(im).to(device)
+        im = im.float()
+        im /= 255  # 0 - 255 to 0.0 - 1.0
 
-            frame = getattr(dataset, 'frame', 0)
+        if len(im.shape) == 3:
+            im = im[None]  # expand for batch dim
+        t2 = time_sync()
+        dt[0] += t2 - t1
 
-            print(pred)
-            
-            # for i, det in enumerate(pred):  # per image
-            #     seen += 1
-            #     p, im0, frame = path, im0s.copy(), getattr(dataset, 'frame', 0)
+        # Inference
+        pred = model(im)
+        t3 = time_sync()
+        dt[1] += t3 - t2
 
-            #     p = Path(p)  # to Path
-            #     # save_path = str(save_dir / p.name)  # im.jpg
-            #     # txt_path = str(save_dir / 'labels' / p.stem) + ('' if dataset.mode == 'image' else f'_{frame}')  # im.txt
+        # NMS
+        pred = non_max_suppression(pred, conf_thres=0.35, max_det=5)
+        pred = pred[0].tolist()
+        dt[2] += time_sync() - t3
 
-            #     s += '%gx%g ' % im.shape[2:]  # print string
-            #     gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
-            #     # imc = im0.copy() if save_crop else im0  # for save_crop
-            #     # imc = im0
-            #     # annotator = Annotator(im0, line_width=line_thickness, example=str(names))
+        has_prediction = len(pred)
+        if has_prediction:
+            for brand in pred:
+                label = names[int(brand[5])]
 
-        # results = model(imgs, size=640)
-        # results.print()
+                # Retrieve or create a dictionnary key for the label and add the bbox, confidence and frame of the prediction
+                brand_count[label] = brand_count.get(label, {"bbox": [], "confidence": [], "frame": []})
+                brand_count[label]["bbox"].append(brand[0:4])
+                brand_count[label]["confidence"].append(brand[4])
+                brand_count[label]["frame"].append(frame)
+
+    # This is a temporary output for the devs to see how the output looks like
+    # It should be useful when creating the method filtering the outputs
+    if brand_count:
+        from pprint import pprint, pformat
+        # pprint(brand_count)
+        with open("output.txt", "w") as f:
+            f.write(pformat(brand_count))
+
+
+    pred_timing_stop = time_sync()
+    pred_timing = pred_timing_stop - pred_timing_start
+    print("Pred took %.2fs (%.2ffps)" % (pred_timing, ((total_frames / initial_framerate) * real_framerate) / pred_timing))
+
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument("-M", "--model", choices=["yolo"], default="yolo", help="choose the used model")
-    group.add_argument("-P", "--txt", help="Export result to txt")
-    group.add_argument("-U", "--url", help="A youtube url of a video. The model will be yolo and the images and videos folder will be ignored")
-    parser.add_argument("-F", "--framerate", type=int, default=15, help="the framerate of the video, only works on videos")
-    # Add a data source argument
-    # remove the model choice?
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("-U", "--url", help="A youtube url of a video. The model will be yolo and the images and videos folder will be ignored")
+    parser.add_argument("-F", "--framerate", type=int, default=15, help="The framerate of the analyzed video. A higher one will take longer to process.")
+    parser.add_argument("-S", "--source", default="./input_video", help="The folder where your video is.")
+    parser.add_argument("-O", "--save-dir", default="./predictions", help="The folder where the pdf with predictions will be.")
     args = parser.parse_args()
 
-    predict(vars(args))
+    predict(**vars(args))
