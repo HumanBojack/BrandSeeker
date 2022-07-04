@@ -156,6 +156,6 @@ if __name__ == "__main__":
     parser.add_argument("-F", "--framerate", type=int, default=15, help="The framerate of the analyzed video. A higher one will take longer to process.")
     parser.add_argument("-S", "--source", default="./input_video", help="The folder where your video is.")
     parser.add_argument("-O", "--save-dir", default="./predictions", help="The folder where the pdf with predictions will be.")
-    parser.add_argument("--save-unprocessed-output", default=False, action=argparse.BooleanOptionalAction, help="Save an unprocessed dict containing all bounding boxes, frames and confidences.")
+    parser.add_argument("--save-unprocessed-output", default=False, action='store_true', help="Save an unprocessed dict containing all bounding boxes, frames and confidences.")
     args = parser.parse_args()
     predict(**vars(args))
