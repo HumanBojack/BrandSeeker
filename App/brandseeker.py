@@ -7,11 +7,13 @@ import torch.backends.cudnn as cudnn
 
 from PIL import Image
 import cv2
+import re
 
 from utils.dataloaders import IMG_FORMATS, VID_FORMATS, LoadImages, LoadStreams
 from utils.general import (LOGGER, check_file, check_img_size, check_imshow, check_requirements, colorstr, cv2, increment_path, non_max_suppression, print_args, scale_coords, strip_optimizer, xyxy2xywh)
 from utils.plots import Annotator, colors, save_one_box
 from utils.torch_utils import select_device, time_sync
+from utils.video_downloader import download
 
 from pathlib import Path
 
@@ -45,8 +47,20 @@ from pathlib import Path
 
 def predict(url, framerate):
     source = "./images" # needs to be changed later
+
     if url:
-        source = url
+        # check if the url is a valid youtube url
+        r = "((http(s)?:\/\/)?)(www\.)?((youtube\.com\/)|(youtu.be\/))[\S]+"
+        assert re.match(r, url), f"The url needs to be a valid youtube url ({url})"
+
+        # Download the video and save it to the specified path
+        print('Downloading the video')
+        if download(url, source):
+            print('Successfully downloaded the video')
+        else:
+            print("Can't download the video")
+        
+
 
     is_file = Path(source).suffix[1:] in (IMG_FORMATS + VID_FORMATS)
     is_url = source.lower().startswith(('rtsp://', 'rtmp://', 'http://', 'https://'))
@@ -62,14 +76,8 @@ def predict(url, framerate):
     stride, names, pt = model.stride, model.names, model.pt
     imgsz = check_img_size((640, 640), s=stride)  # check image size might want to remove
 
-    if webcam:
-        view_img = check_imshow()
-        cudnn.benchmark = True  # set True to speed up constant image size inference
-        dataset = LoadStreams(source, img_size=imgsz, stride=stride, auto=pt)
-        bs = len(dataset)  # batch_size
-    else:
-        dataset = LoadImages(source, img_size=imgsz, stride=stride, auto=pt)
-        bs = 1  # batch_size
+    dataset = LoadImages(source, img_size=imgsz, stride=stride, auto=pt)
+    bs = 1  # batch_size
 
     pred_timing_start = time_sync()
 
