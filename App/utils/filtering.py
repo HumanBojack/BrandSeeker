@@ -14,6 +14,7 @@ def filter_output(output, fps, seconds_threshold=2, confidence_threshold= 0.09, 
     total_predicted_frames = len(set(chain(*[content['frame'] for content in output.values()])))
 
     output_dict = {}
+    
     for brand, content in output.items():
 
         regularized_frame = 1 / (len(content['frame']) / total_predicted_frames)

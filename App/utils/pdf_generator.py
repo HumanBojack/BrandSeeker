@@ -121,8 +121,10 @@ def add_colored_artwork_bottom_right_corner(page: Page):
 
 def load_frames(video_path, output_dict):
 
+    # Path to tmp file
     tmp_path = 'tmp'
 
+    # 
     try:
         shutil.rmtree(tmp_path)
     except OSError as e:
@@ -144,8 +146,6 @@ def load_frames(video_path, output_dict):
     path_list = []
     path_cropped_list= []
 
-    # TODO: Add loop and conditions to get values from the raw output.txt if chosen
-    
     # Get values needed from filtered dict
     for key, value in output_dict.items():
         # brand
@@ -176,10 +176,14 @@ def load_frames(video_path, output_dict):
 
     # Normalise all caracters and replace space with underscore for the saved pdf name
     video_name = os.path.basename(video_path).split(".")[0].replace(" ", "_")
-    video_name = unicodedata.normalize('NFD', video_name).encode('ascii', 'ignore')
-    video_name = video_name.decode("utf-8")
+    video_name = normalise(video_name)
 
     return video_name, length, confidence_list, brand_list, path_list, path_cropped_list, frame_seq_list
+
+def normalise(string):
+    string = unicodedata.normalize('NFD', string).encode('ascii', 'ignore')
+    string = string.decode("utf-8")
+    return string
 
 def pdf_generator(video_path, output_dict, save_dir):
     """
@@ -188,7 +192,7 @@ def pdf_generator(video_path, output_dict, save_dir):
         args: video_path: [str] | path to the video
               output_dict: [dict] | output dictionnary after brandseeker algorithm output filter
     
-        return: output.pdf
+        return: video_name.pdf
     """
     # Write frames and return a path list
     video_name, length, confidence_list, brand_list, path_list, path_cropped_list, frame_seq_list = load_frames(video_path, output_dict)
