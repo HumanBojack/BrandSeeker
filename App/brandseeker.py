@@ -125,7 +125,7 @@ def predict(url, framerate, source, save_dir, save_unprocessed_output, alpha):
         with open(f"{save_dir}/{normalize(path)}.txt", "w") as f:
             f.write(str(brand_count))
 
-    filtered_output = filter_output(brand_count, framerate, initial_framerate*total_frames, alpha=alpha)
+    filtered_output = filter_output(brand_count, framerate, total_frames / initial_framerate, alpha=alpha)
     if filtered_output:
         pdf_generator(path, filtered_output, save_dir)
     else:
