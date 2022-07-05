@@ -175,12 +175,12 @@ def load_frames(video_path, output_dict):
     cap.release()
 
     # Normalise all caracters and replace space with underscore for the saved pdf name
-    video_name = os.path.basename(video_path).split(".")[0].replace(" ", "_")
-    video_name = normalise(video_name)
+    video_name = normalize(video_path)
 
     return video_name, length, confidence_list, brand_list, path_list, path_cropped_list, frame_seq_list
 
-def normalise(string):
+def normalize(path):
+    string = os.path.basename(path).split(".")[0].replace(" ", "_")
     string = unicodedata.normalize('NFD', string).encode('ascii', 'ignore')
     string = string.decode("utf-8")
     return string

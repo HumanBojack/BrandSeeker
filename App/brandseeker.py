@@ -16,7 +16,7 @@ from utils.torch_utils import select_device, time_sync
 
 from utils.video_downloader import download
 from utils.filtering import filter_output
-from utils.pdf_generator import pdf_generator
+from utils.pdf_generator import pdf_generator, normalize
 
 from pathlib import Path
 from tqdm.autonotebook import tqdm
@@ -138,7 +138,7 @@ def predict(url, framerate, source, save_dir, save_unprocessed_output):
         pdf_generator(path, filtered_output, save_dir)
 
         if save_unprocessed_output:
-            with open(f"{save_dir}/output.txt", "w") as f:
+            with open(f"{save_dir}/{normalize(path)}.txt", "w") as f:
                 f.write(str(brand_count))
     else:
         print("No prediction has been made")
