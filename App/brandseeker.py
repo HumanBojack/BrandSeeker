@@ -89,32 +89,25 @@ def predict(url, framerate, source, save_dir, save_unprocessed_output):
 
     # Loop on frames
     pred_timing_start = time_sync()
-    dt, seen = [0.0, 0.0, 0.0], 0
     for path, im, im0s, vid_cap, s, frame in tqdm(dataset, total=total_frames):
 
         # skip the frame if it isn't in the specified framerate
         if frame % round(initial_framerate / framerate) != 0:
             continue
 
-        t1 = time_sync()
         im = torch.from_numpy(im).to(device)
         im = im.float()
         im /= 255  # 0 - 255 to 0.0 - 1.0
 
         if len(im.shape) == 3:
             im = im[None]  # expand for batch dim
-        t2 = time_sync()
-        dt[0] += t2 - t1
 
         # Inference
         pred = model(im)
-        t3 = time_sync()
-        dt[1] += t3 - t2
 
         # NMS
         pred = non_max_suppression(pred, conf_thres=0.35, max_det=5)
         pred = pred[0].tolist()
-        dt[2] += time_sync() - t3
 
         has_prediction = len(pred)
         if has_prediction:
@@ -128,13 +121,13 @@ def predict(url, framerate, source, save_dir, save_unprocessed_output):
                 brand_count[label]["frame"].append(frame)
     
     # Generate an output if a prediction has been made
-    if brand_count:
-        filtered_output = filter_output(brand_count, framerate)
-        pdf_generator(path, filtered_output, save_dir)
+    if save_unprocessed_output & bool(brand_count):
+        with open(f"{save_dir}/{normalize(path)}.txt", "w") as f:
+            f.write(str(brand_count))
 
-        if save_unprocessed_output:
-            with open(f"{save_dir}/{normalize(path)}.txt", "w") as f:
-                f.write(str(brand_count))
+    filtered_output = filter_output(brand_count, framerate)
+    if filtered_output:
+        pdf_generator(path, filtered_output, save_dir)
     else:
         print("No prediction has been made")
 
