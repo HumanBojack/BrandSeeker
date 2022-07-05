@@ -1,25 +1,20 @@
-import argparse
-# from models.yolov5 import utils
-# utils.notebook_init()
-# from models.yolov5 import detect
-import torch
-import torch.backends.cudnn as cudnn
 
-from PIL import Image
-import cv2
-import re
-
-from utils.dataloaders import IMG_FORMATS, VID_FORMATS, LoadImages, LoadStreams
-from utils.general import (LOGGER, check_file, check_img_size, check_imshow, check_requirements, colorstr, cv2, increment_path, non_max_suppression, print_args, scale_coords, strip_optimizer, xyxy2xywh, is_colab)
-from utils.plots import Annotator, colors, save_one_box
+from utils.general import (check_file, check_img_size, cv2, non_max_suppression)
+from utils.dataloaders import IMG_FORMATS, VID_FORMATS, LoadImages
 from utils.torch_utils import select_device, time_sync
 
+from utils.pdf_generator import pdf_generator, normalize
 from utils.video_downloader import download
 from utils.filtering import filter_output
-from utils.pdf_generator import pdf_generator, normalize
 
-from pathlib import Path
 from tqdm.autonotebook import tqdm
+from pathlib import Path
+
+import argparse
+import torch
+
+import cv2
+import re
 
 
 # weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
