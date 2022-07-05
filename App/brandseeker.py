@@ -45,7 +45,7 @@ import re
 # dnn=False,  # use OpenCV DNN for ONNX inference
 
 
-def predict(url, framerate, source, save_dir, save_unprocessed_output):
+def predict(url, framerate, source, save_dir, save_unprocessed_output, alpha):
 
     if url:
         is_file = Path(url).suffix[1:] in (IMG_FORMATS + VID_FORMATS)
@@ -125,7 +125,7 @@ def predict(url, framerate, source, save_dir, save_unprocessed_output):
         with open(f"{save_dir}/{normalize(path)}.txt", "w") as f:
             f.write(str(brand_count))
 
-    filtered_output = filter_output(brand_count, framerate)
+    filtered_output = filter_output(brand_count, framerate, initial_framerate*total_frames, alpha=alpha)
     if filtered_output:
         pdf_generator(path, filtered_output, save_dir)
     else:
@@ -143,6 +143,7 @@ if __name__ == "__main__":
     parser.add_argument("-F", "--framerate", type=int, default=15, help="The framerate of the analyzed video. A higher one will take longer to process.")
     parser.add_argument("-S", "--source", default="./input_video", help="The folder where your video is.")
     parser.add_argument("-O", "--save-dir", default="./predictions", help="The folder where the pdf with predictions will be.")
+    parser.add_argument("-A", "--alpha", type=float, default=None, help="[0-1] A bigger alpha will give more importance to the confidence, otherwise the frames.")
     parser.add_argument("--save-unprocessed-output", default=False, action='store_true', help="Save an unprocessed dict containing all bounding boxes, frames and confidences.")
     args = parser.parse_args()
     predict(**vars(args))
