@@ -175,8 +175,11 @@ def load_frames(video_path, output_dict):
 
     # Normalise all caracters and replace space with underscore for the saved pdf name
     video_name = normalize(video_path)
+    frame_time = [int(item / fps) for item in frame_seq_list]
+    frame_minutes = [int(item/60) for item in frame_time]
+    frame_seconds = [int(item%60) for item in frame_time]
 
-    return video_name, length, confidence_list, brand_list, path_list, path_cropped_list, frame_seq_list
+    return video_name, length, confidence_list, brand_list, path_list, path_cropped_list, frame_minutes, frame_seconds
 
 def normalize(path):
     string = os.path.basename(path).split(".")[0].replace(" ", "_")
@@ -194,11 +197,11 @@ def pdf_generator(video_path, output_dict, save_dir):
         return: video_name.pdf
     """
     # Write frames and return a path list
-    video_name, length, confidence_list, brand_list, path_list, path_cropped_list, frame_seq_list = load_frames(video_path, output_dict)
+    video_name, length, confidence_list, brand_list, path_list, path_cropped_list, frame_minutes, frame_seconds = load_frames(video_path, output_dict)
     
     # Video length in m, s
     minutes = int(length/60)
-    seconds = length%60
+    seconds = int(length%60)
     
     # Create empty Document
     pdf = Document()
@@ -261,7 +264,7 @@ def pdf_generator(video_path, output_dict, save_dir):
     )
     layout.add(
         Paragraph(
-            "Duration: "+ str(minutes) + 'm ' + str(int(seconds)) + 's',
+            "Duration: "+ str(minutes) + 'm ' + str(seconds) + 's',
             font_color=HexColor("#e01b84"),
             font_size=Decimal(11),
         )
@@ -295,12 +298,12 @@ def pdf_generator(video_path, output_dict, save_dir):
         )
         .add(
             UnorderedList()
-            .add(Paragraph("Frame " + str(frame_seq_list[i])))
+            .add(Paragraph("Time: " + str(frame_minutes[i]) + 'm ' + (str(frame_seconds[i])) + 's'))
             .add(Paragraph("Median confidence: " + str(confidence_list[i])))
             .add(Paragraph("Detected bounding box: "))
             .add(Image(Path(path_cropped_list[i],                    
-                        width=Decimal(128),
-                        height=Decimal(128))))
+                        width=Decimal(64),
+                        height=Decimal(32))))
         )
         .no_borders()
     )
