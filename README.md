@@ -1,6 +1,6 @@
 # BrandSeeker
 [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1ACWrzkK7HLayllfno8cQ8iF9-1gYkx5g?usp=sharing)
-[![Open in Kaggle](https://kaggle.com/static/images/open-in-kaggle.svg)]()
+<!-- [![Open in Kaggle](https://kaggle.com/static/images/open-in-kaggle.svg)]() -->
 
 This repository uses methods from [the yolov5 🚀 repository](https://github.com/ultralytics/yolov5).
 
