@@ -142,7 +142,7 @@ def load_frames(video_path, output_dict):
     frame_seq_list = []
     brand_list = []
     confidence_list = []
-    bbx = []
+    bbxs = []
     path_list = []
     path_cropped_list= []
 
@@ -155,12 +155,12 @@ def load_frames(video_path, output_dict):
         # frame
         frame_seq_list.append(value[2])
         # bbx
-        bbx.append(value[3])
+        bbxs.append(value[3])
 
     # Save frames and cropped frames with bbx axes
     for i, elem in enumerate(frame_seq_list):
 
-        bbx = [max(0, int(bbx[i][1])), max(0, int(bbx[i][3])), max(0, int(bbx[i][0])), max(0, int(bbx[i][2]))] # ymin, ymax, xmin, xmax
+        bbx = [max(0, int(bbxs[i][1])), max(0, int(bbxs[i][3])), max(0, int(bbxs[i][0])), max(0, int(bbxs[i][2]))] # ymin, ymax, xmin, xmax
         cap.set(1, elem)  # Where frame_no is the frame you want
         ret, frame = cap.read()  # Read the frame
 
