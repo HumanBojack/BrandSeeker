@@ -2,16 +2,16 @@ import numpy as np
 from itertools import chain
 
 
-def filter_output(output, fps, time, seconds_threshold=2, score_threshold=0.09, alpha=0.7):
+def filter_output(output, fps, time, seconds_threshold=1, score_threshold=0.09, alpha=0.7):
 
     total_predicted_frames = len(set(chain(*[content['frame'] for content in output.values()])))
     timeMin = time/60
 
     if alpha is None:
         if timeMin > 30:
-            alpha = 0.2
+            alpha = 0.9
         elif timeMin < 10:
-            alpha = 0.6
+            alpha = 0.25
         else:
             alpha = timeMin * 0.2 / 10
 
