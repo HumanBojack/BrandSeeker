@@ -124,7 +124,6 @@ def load_frames(video_path, output_dict):
     # Path to tmp file
     tmp_path = 'tmp'
 
-    # 
     try:
         shutil.rmtree(tmp_path)
     except OSError as e:
@@ -249,7 +248,7 @@ def pdf_generator(video_path, output_dict, save_dir):
     # Title
     layout.add(
         Paragraph(
-            str(video_name), font_color=HexColor("#283592"), font_size=Decimal(34)
+            str(video_name[:45]), font_color=HexColor("#283592"), font_size=Decimal(16)
         )
     )
     # Subtitles
@@ -257,7 +256,7 @@ def pdf_generator(video_path, output_dict, save_dir):
         Paragraph(
             "Date: "+str(date.today().strftime("%B %d, %Y")),
             font_color=HexColor("#e01b84"),
-            font_size=Decimal(11),
+            font_size=Decimal(11)
         )
     )
     layout.add(
