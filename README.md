@@ -5,7 +5,7 @@
 This repository uses methods from [the yolov5 🚀 repository](https://github.com/ultralytics/yolov5). Our dataset can be found [here](https://www.kaggle.com/datasets/humanbojack/yolo-brand-object-detection).
 
 # What is BrandSeeker?
-This project aims at creating a CLI tool that detects brands in a video. We want to 
+This project aims at creating a CLI tool that detects brands in a video.
 <details>
 <summary>The brands that can be recognized (click to expand)</summary>
 ["Republic of Gamers", "Hello Fresh", "Displate", "KiwiCo", "World of Tanks", "Dollar Shave Club", "SkillShare", "Manscaped", "Rhinoshield", "Raid shadow legends", "Worlds of Warships", "Fruitz", "War Thunder", "Redbull", "Squarespace", "Brilliant.org", "Logitech", "DBrand", "Honey coupon", "Gorillas brand", "levlup", "Ridge wallet", "ExpressVPN", "State of Survival", "Coca Cola", "Crunchyroll", "Uber Eats", "Surfshark", "Corsair", "Lootcrate", "Amazon", "audible", "NordVPN", "GFuel", "Genshin Impact", "TunnelBear VPN", "Microsoft", "Winamax"]
